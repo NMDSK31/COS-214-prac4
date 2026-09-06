@@ -1,0 +1,18 @@
+# Compiled output
+/taskforge
+*.o
+*.d
+*.out
+
+# Debugging and memory-analysis output
+vgcore.*
+valgrind*.log
+tests/iterator_tests
+tests/iterator_tests_sanitized
+tests/*.dSYM/
+/taskforge.dSYM/
+
+# Editor and operating-system files
+.DS_Store
+.idea/
+.vscode/
