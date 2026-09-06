@@ -1,15 +1,14 @@
 CXX := g++
 
-CPPFLAGS := -I../../Person1 -I..
+CPPFLAGS := -I../../Person1 -I../../Person2 -I..
 CXXFLAGS := -std=c++11 -Wall -Wextra -pedantic -g
 SANITIZER_FLAGS := -fsanitize=undefined -fno-omit-frame-pointer
 
 TARGET := iterator_tests
 SANITIZED_TARGET := iterator_tests_sanitized
 SOURCES := \
-	../../Person1/structureVersion.cpp \
-	../../Person1/workComponent.cpp \
-	../../Person1/workGroup.cpp \
+	$(wildcard ../../Person1/*.cpp) \
+	$(wildcard ../../Person2/*.cpp) \
 	../DepthFirstIterator.cpp \
 	../IncompleteTaskIterator.cpp \
 	IteratorTests.cpp
@@ -32,3 +31,4 @@ $(SANITIZED_TARGET): $(SOURCES)
 
 clean:
 	rm -f $(TARGET) $(SANITIZED_TARGET)
+	rm -rf $(TARGET).dSYM $(SANITIZED_TARGET).dSYM

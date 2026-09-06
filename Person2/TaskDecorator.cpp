@@ -21,12 +21,13 @@ TaskDecorator::TaskDecorator(ExecutableTask* wrapped)
 /**
  * @brief Destroys the decorator.
  *
- * The decorator does not delete the wrapped task here.
- * Ownership remains with the Composite hierarchy or
- * the caller that created the task.
+ * Each decorator owns its wrapped task or decorator. Deleting the outermost
+ * decorator therefore destroys the complete wrapped ownership chain.
  */
 TaskDecorator::~TaskDecorator()
 {
+    delete wrapped;
+    wrapped = nullptr;
 }
 
 /**

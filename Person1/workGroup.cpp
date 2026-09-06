@@ -1,4 +1,6 @@
 #include "workGroup.h"
+#include "../Person3/DepthFirstIterator.h"
+#include "../Person3/IncompleteTaskIterator.h"
 #include <sstream>
 
 using namespace std;
@@ -129,11 +131,11 @@ WorkComponent*WorkGroup::iteratorChildAt(size_t index) const
 }
 WorkIterator* WorkGroup::createDepthFirstIterator()
 {
- //implement
+    return new DepthFirstIterator(this, getStructureVersion());
 }
 WorkIterator* WorkGroup:: createIncompleteTaskIterator()
 {
-    //implement
+    return new IncompleteTaskIterator(this, getStructureVersion());
 }
 WorkGroup::~WorkGroup()
 {

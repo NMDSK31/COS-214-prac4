@@ -11,6 +11,7 @@ vgcore.*
 valgrind*.log
 tests/iterator_tests
 tests/iterator_tests_sanitized
+tests/*.dSYM/
 
 # Editor and operating-system files
 .DS_Store

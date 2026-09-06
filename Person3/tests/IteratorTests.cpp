@@ -1,6 +1,11 @@
 #include "DepthFirstIterator.h"
 #include "IncompleteTaskIterator.h"
+#include "ApprovalRequiredDecorator.h"
+#include "EventTask.h"
+#include "UrgentTaskDecorator.h"
+#include "eventPlan.h"
 #include "structureVersion.h"
+#include "taskList.h"
 #include "workComponent.h"
 #include "workGroup.h"
 
@@ -25,6 +30,20 @@ public:
 
 private:
     bool incomplete;
+};
+
+class DestructionTrackedTask : public EventTask {
+public:
+    explicit DestructionTrackedTask(int* destructionCount)
+        : EventTask("tracked", "Tracked task", 10.0, 1),
+          destructionCount(destructionCount) {}
+
+    virtual ~DestructionTrackedTask() {
+        ++(*destructionCount);
+    }
+
+private:
+    int* destructionCount;
 };
 
 std::vector<std::string> collect(WorkIterator& iterator) {
@@ -217,12 +236,128 @@ void testEmptyAndNullTraversals() {
     assert(noFilteredRoot.current() == NULL);
 }
 
+void completeTask(EventTask& task) {
+    assert(task.markReady());
+    assert(task.start());
+    assert(task.submitForReview());
+    assert(task.approveReview());
+    assert(task.getStateName() == "Completed");
+    assert(!task.isIncompleteWork());
+}
+
+void testFactoriesWithIntegratedTasksAndDecorators() {
+    EventPlan root("plan", "Event plan", "EVT-01");
+    TaskList* preparation =
+        new TaskList("preparation", "Preparation", "PREP", "Hall");
+    TaskList* operations =
+        new TaskList("operations", "Operations", "OPS", "Stage");
+    EventTask* completed = new EventTask("completed", "Completed task", 20.0, 1);
+    EventTask* active = new EventTask("active", "Active task", 30.0, 2);
+    EventTask* setupSound =
+        new EventTask("setup-sound", "Set up sound", 100.0, 4);
+
+    completeTask(*completed);
+    assert(setupSound->markReady());
+    assert(preparation->addChild(completed));
+    assert(preparation->addChild(setupSound));
+    assert(operations->addChild(active));
+    assert(root.addChild(preparation));
+    assert(root.addChild(operations));
+    assert(root.estimatedCost() == 150.0);
+    assert(root.priorityScore() == 4);
+
+    WorkIterator* stale = root.createDepthFirstIterator();
+    stale->first();
+    stale->next();
+    assert(stale->current() == preparation);
+
+    WorkComponent* detached = preparation->detachChild("setup-sound");
+    assert(detached == setupSound);
+    assert(setupSound->getStructureVersion() == NULL);
+    assert(!stale->isValid());
+    assert(stale->current() == NULL);
+    delete stale;
+
+    UrgentTaskDecorator* urgent =
+        new UrgentTaskDecorator(setupSound, 3, 25.0, "coordinator");
+    ApprovalRequiredDecorator* approval =
+        new ApprovalRequiredDecorator(urgent, 10.0);
+    assert(operations->addChild(approval));
+    assert(approval->estimatedCost() == 135.0);
+    assert(approval->priorityScore() == 7);
+    assert(root.estimatedCost() == 185.0);
+    assert(root.priorityScore() == 7);
+    assert(approval->getStructureVersion() == root.getStructureVersion());
+    assert(urgent->getStructureVersion() == root.getStructureVersion());
+    assert(setupSound->getStructureVersion() == root.getStructureVersion());
+
+    WorkIterator* depth = root.createDepthFirstIterator();
+    const std::vector<std::string> depthOrder = collect(*depth);
+    const char* const expectedDepth[] = {
+        "plan", "preparation", "completed", "operations", "active",
+        "setup-sound"
+    };
+    assertOrder(depthOrder,
+                expectedDepth,
+                sizeof(expectedDepth) / sizeof(expectedDepth[0]));
+
+    depth->first();
+    const unsigned long beforeStateChanges =
+        root.getStructureVersion()->current();
+    assert(active->markReady());
+    assert(root.getStructureVersion()->current() == beforeStateChanges);
+    assert(depth->isValid());
+    delete depth;
+
+    WorkIterator* incomplete = root.createIncompleteTaskIterator();
+    const std::vector<std::string> incompleteOrder = collect(*incomplete);
+    const char* const expectedIncomplete[] = {"active", "setup-sound"};
+    assertOrder(incompleteOrder,
+                expectedIncomplete,
+                sizeof(expectedIncomplete) / sizeof(expectedIncomplete[0]));
+
+    assert(!approval->start());
+    approval->grantApproval();
+    assert(approval->start());
+    assert(approval->submitForReview());
+    assert(approval->approveReview());
+    assert(active->start());
+    assert(active->submitForReview());
+    assert(active->approveReview());
+    assert(incomplete->isValid());
+
+    incomplete->first();
+    assert(incomplete->isDone());
+    assert(incomplete->current() == NULL);
+    delete incomplete;
+}
+
+void testDecoratorOwnershipChain() {
+    int destructionCount = 0;
+
+    {
+        EventPlan root("plan", "Event plan", "EVT-02");
+        ExecutableTask* chain = new ApprovalRequiredDecorator(
+            new UrgentTaskDecorator(
+                new DestructionTrackedTask(&destructionCount),
+                2,
+                5.0,
+                "owner"),
+            3.0);
+        assert(root.addChild(chain));
+    }
+
+    assert(destructionCount == 1);
+}
+
 int main() {
     testDepthFirstOrderAndReset();
     testIndependentDepthFirstIterators();
     testStructuralInvalidation();
     testIncompleteFilteringAndIndependence();
     testEmptyAndNullTraversals();
+    testFactoriesWithIntegratedTasksAndDecorators();
+    testDecoratorOwnershipChain();
 
     std::cout << "All iterator tests passed." << std::endl;
     return 0;
