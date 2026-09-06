@@ -19,10 +19,6 @@ private:
 
     void replaceState(TaskState* nextState);
 
-protected:
-    void setBlockReason(const std::string& reason);
-    void clearBlockReason();
-
 public:
     EventTask(const std::string& id,
               const std::string& name,
@@ -51,6 +47,9 @@ public:
 
     std::size_t iteratorChildCount() const override;
     WorkComponent* iteratorChildAt(std::size_t index) const override;
+
+    void setBlockReason(const std::string& reason);
+    void clearBlockReason();
 };
 
 #endif

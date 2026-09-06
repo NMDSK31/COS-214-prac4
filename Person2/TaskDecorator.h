@@ -11,8 +11,7 @@ protected:
     ExecutableTask* wrapped;
 
 public:
-    TaskDecorator(ExecutableTask* wrapped);
-
+    explicit TaskDecorator(ExecutableTask* wrapped);
     virtual ~TaskDecorator();
 
     bool markReady() override;
@@ -33,8 +32,10 @@ public:
 
     bool isIncompleteWork() const override;
 
-    void setStructureVersion(
-        StructureVersion* version) override;
+    void setStructureVersion(StructureVersion* version) override;
+
+    std::size_t iteratorChildCount() const override;
+    WorkComponent* iteratorChildAt(std::size_t index) const override;
 };
 
 #endif
