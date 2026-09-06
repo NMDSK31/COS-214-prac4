@@ -116,3 +116,18 @@ README.md
 During development, each team member works in their assigned `PersonN/`
 folder. The completed files will be integrated into the final structure before
 submission.
+
+## Iterator subsystem tests in the development layout
+
+From the repository root, run the normal and sanitizer-backed test suites with:
+
+```sh
+make -C Person3/tests test
+make -C Person3/tests sanitize
+make -C Person3/tests clean
+```
+
+The sanitizer target uses UndefinedBehaviorSanitizer. The development tests
+use Person 1's real composite implementation and a controlled task leaf. They
+will be supplemented with Person 2's concrete `EventTask` and checked with
+Valgrind inside Docker during final integration.

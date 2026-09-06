@@ -9,6 +9,8 @@
 # Debugging and memory-analysis output
 vgcore.*
 valgrind*.log
+tests/iterator_tests
+tests/iterator_tests_sanitized
 
 # Editor and operating-system files
 .DS_Store
