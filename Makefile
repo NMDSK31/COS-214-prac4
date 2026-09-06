@@ -15,7 +15,7 @@ SOURCES := $(wildcard src/*.cpp src/*/*.cpp) main.cpp
 OBJECTS := $(SOURCES:.cpp=.o)
 DEPENDENCIES := $(OBJECTS:.o=.d)
 
-.PHONY: all clean run valgrind
+.PHONY: all clean run test sanitize valgrind
 
 all: $(TARGET)
 
@@ -27,6 +27,12 @@ $(TARGET): $(OBJECTS)
 
 run: $(TARGET)
 	./$(TARGET)
+
+test:
+	$(MAKE) -C tests test
+
+sanitize:
+	$(MAKE) -C tests sanitize
 
 valgrind: $(TARGET)
 	valgrind --leak-check=full --show-leak-kinds=all ./$(TARGET)

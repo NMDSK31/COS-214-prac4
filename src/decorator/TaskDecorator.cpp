@@ -5,6 +5,8 @@
 
 #include "TaskDecorator.h"
 
+#include <stdexcept>
+
 /**
  * @brief Constructs a task decorator.
  *
@@ -16,6 +18,10 @@ TaskDecorator::TaskDecorator(ExecutableTask* wrapped)
           wrapped != nullptr ? wrapped->getName() : ""),
       wrapped(wrapped)
 {
+    if (wrapped == nullptr)
+    {
+        throw std::invalid_argument("TaskDecorator requires a task");
+    }
 }
 
 /**

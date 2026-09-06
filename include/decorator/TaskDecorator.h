@@ -34,8 +34,13 @@ public:
 
     void setStructureVersion(StructureVersion* version) override;
 
+protected:
     std::size_t iteratorChildCount() const override;
     WorkComponent* iteratorChildAt(std::size_t index) const override;
+
+private:
+    TaskDecorator(const TaskDecorator&) = delete;
+    TaskDecorator& operator=(const TaskDecorator&) = delete;
 };
 
 #endif

@@ -12,7 +12,7 @@ WorkGroup::WorkGroup(const string& id, const string& name)
 }
 bool WorkGroup::addChild(WorkComponent* child)
 {
-    if(child==NULL)
+    if(child==NULL || child==this)
     {
         return false;
     }

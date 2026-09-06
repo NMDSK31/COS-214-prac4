@@ -11,6 +11,7 @@
 
 #include <cassert>
 #include <iostream>
+#include <stdexcept>
 #include <string>
 #include <vector>
 
@@ -236,6 +237,102 @@ void testEmptyAndNullTraversals() {
     assert(noFilteredRoot.current() == NULL);
 }
 
+void testCompositeValidationAndOwnership() {
+    EventPlan root("plan", "Event plan", "EVT-00");
+    StructureVersion* version = root.getStructureVersion();
+    assert(version != NULL);
+    assert(version->current() == 0);
+    assert(root.estimatedCost() == 0.0);
+    assert(root.priorityScore() == 0);
+    assert(!root.addChild(NULL));
+    assert(!root.addChild(&root));
+    assert(version->current() == 0);
+
+    int destructionCount = 0;
+    DestructionTrackedTask* tracked =
+        new DestructionTrackedTask(&destructionCount);
+    assert(root.addChild(tracked));
+    assert(root.estimatedCost() == 10.0);
+    assert(root.priorityScore() == 1);
+    assert(version->current() == 1);
+    assert(!root.addChild(tracked));
+
+    EventTask* duplicateId =
+        new EventTask("tracked", "Duplicate", 40.0, 5);
+    assert(!root.addChild(duplicateId));
+    delete duplicateId;
+    assert(version->current() == 1);
+
+    WorkComponent* detached = root.detachChild("tracked");
+    assert(detached == tracked);
+    assert(destructionCount == 0);
+    assert(detached->getStructureVersion() == NULL);
+    assert(version->current() == 2);
+    delete detached;
+    assert(destructionCount == 1);
+
+    DestructionTrackedTask* removed =
+        new DestructionTrackedTask(&destructionCount);
+    assert(root.addChild(removed));
+    assert(version->current() == 3);
+    assert(root.removeChild("tracked"));
+    assert(destructionCount == 2);
+    assert(version->current() == 4);
+    assert(!root.removeChild("missing"));
+    assert(version->current() == 4);
+}
+
+void testCompleteStateTransitionMatrix() {
+    EventTask task("stateful", "Stateful task", 50.0, 3);
+    assert(task.getStateName() == "Planned");
+    assert(!task.start());
+    assert(!task.submitForReview());
+
+    assert(task.markReady());
+    assert(task.getStateName() == "Ready");
+    assert(!task.markReady());
+    assert(task.block("supplier delay"));
+    assert(task.getStateName() == "Blocked");
+    assert(!task.start());
+    assert(task.resolveBlock());
+    assert(task.getStateName() == "Ready");
+
+    assert(task.start());
+    assert(task.getStateName() == "InProgress");
+    assert(task.block("safety check"));
+    assert(task.resolveBlock());
+    assert(task.start());
+    assert(task.submitForReview());
+    assert(task.getStateName() == "Review");
+    assert(task.rejectReview());
+    assert(task.getStateName() == "Ready");
+
+    assert(task.start());
+    assert(task.submitForReview());
+    assert(task.approveReview());
+    assert(task.getStateName() == "Completed");
+    assert(!task.isIncompleteWork());
+    assert(!task.markReady());
+    assert(!task.start());
+    assert(!task.block("late change"));
+    assert(!task.resolveBlock());
+    assert(!task.submitForReview());
+    assert(!task.approveReview());
+    assert(!task.rejectReview());
+}
+
+void testDecoratorRejectsNullTask() {
+    bool rejected = false;
+
+    try {
+        ApprovalRequiredDecorator invalid(NULL, 5.0);
+    } catch (const std::invalid_argument&) {
+        rejected = true;
+    }
+
+    assert(rejected);
+}
+
 void completeTask(EventTask& task) {
     assert(task.markReady());
     assert(task.start());
@@ -356,6 +453,9 @@ int main() {
     testStructuralInvalidation();
     testIncompleteFilteringAndIndependence();
     testEmptyAndNullTraversals();
+    testCompositeValidationAndOwnership();
+    testCompleteStateTransitionMatrix();
+    testDecoratorRejectsNullTask();
     testFactoriesWithIntegratedTasksAndDecorators();
     testDecoratorOwnershipChain();
 

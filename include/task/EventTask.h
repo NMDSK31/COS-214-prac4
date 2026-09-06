@@ -25,7 +25,7 @@ public:
               double baseCost,
               int basePriority);
 
-    ~EventTask();
+    ~EventTask() override;
 
     bool markReady() override;
     bool start() override;
@@ -45,11 +45,16 @@ public:
 
     bool isIncompleteWork() const override;
 
+    void setBlockReason(const std::string& reason);
+    void clearBlockReason();
+
+protected:
     std::size_t iteratorChildCount() const override;
     WorkComponent* iteratorChildAt(std::size_t index) const override;
 
-    void setBlockReason(const std::string& reason);
-    void clearBlockReason();
+private:
+    EventTask(const EventTask&) = delete;
+    EventTask& operator=(const EventTask&) = delete;
 };
 
 #endif

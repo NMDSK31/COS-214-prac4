@@ -31,8 +31,8 @@ make clean     # Remove generated objects, dependencies and executables
 Run the integration and iterator regression tests with:
 
 ```sh
-make -C tests test
-make -C tests sanitize
+make test
+make sanitize
 make -C tests clean
 ```
 
